@@ -7,18 +7,19 @@
   Author: David Duthie
 |#
 
-(ql:quickload :cl-fad)
-
 (asdf:defsystem "git-notify"
   :version "0.1.0"
   :author "David Duthie"
   :license "Eclipse"
-  :depends-on ("cl-fad")
+  :depends-on ()
   :components ((:module "src"
+                :serial T
                 :components
-                ((:file "git-notify"))))
+                ((:file "util")
+                 (:file "git-notify"))))
   :description "Walk a directory of git repositories and check if they are up to date."
   :long-description
   #.(uiop:read-file-string
      (uiop:subpathname *load-pathname* "./README.markdown"))
   :in-order-to ((test-op (test-op "git-notify-test"))))
+

@@ -5,15 +5,17 @@ exec ros -Q -- $0 "$@"
 |#
 (progn ;;init forms
   (ros:ensure-asdf)
-  #+quicklisp (ql:quickload '(:git-notify) :silent t))
+  #+quicklisp (ql:quickload '(:git-notify) :silent t)
+  )
 
 (defpackage :ros.script.git-notify.3732380400
-  (:use :cl))
+  (:use
+   :cl
+   :git-notify))
 (in-package :ros.script.git-notify.3732380400)
 
 (defun main (root &rest argv)
   (declare (ignorable argv))
-  (git-notify:check-and-report root)
-  )
+  (git-notify:check-and-report root))
 
 ;;; vim: set ft=lisp lisp:

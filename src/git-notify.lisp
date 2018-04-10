@@ -1,6 +1,5 @@
-(ql:quickload :cl-fad)
 (defpackage git-notify
-  (:use :cl :cl-fad)
+  (:use :cl :util)
   (:export :check-and-report))
 (in-package :git-notify)
 
@@ -45,23 +44,19 @@
     (lambda (path)
       (subseq (namestring path) prefix))))
 
-;; FIXME
-(defmacro report (key fmt eater name)
-  `((,key) (write-line (format nil ,fmt (funcall ,eater ,name)))))
+(defmacro print-case (dir eater name &rest opts)
+  (let ((opts (util:partition opts 2)))
+    `(case (check-repo ,dir)
+       ,@(mapcar (lambda (opt)
+                   (apply 'util:report (car opt) (cadr opt) eater name nil))
+          opts))))
 
 (defun check-and-report (root)
   (let ((eater (eat-prefix root)))
     (mapcar (lambda (dir)
               (let ((name (namestring dir)))
-                (case (check-repo dir)
-                  ((:all-good) (write-line (format nil "~a ✔" (funcall eater name))))
-                  ;; (report :all-good "~a ✔" eater name)
-                  ((:uncommited-changes) (write-line (format nil "~a ✖" (funcall eater name))))
-                  ;; (report :uncommited-changes "~a ✖" eater name)
-                  ((:unpushed-changes) (write-line (format nil "~a ▨" (funcall eater name))))
-                  ;; (report :unpushed-changes "~a ▨" eater name)
-                  ((:idk-lol) (write-line (format nil "~a ?" (funcall eater name))))
-                  ;; (report :idk-lol "~a ?" eater name)
-                  )))
+                (print-case dir eater name
+                 :all-good "~a ✔"
+                 :uncommited-changes "~a ✖"
+                 :unpushed-changes "~a ▨")))
             (find-git-dirs root))))
-
