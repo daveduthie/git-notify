@@ -1,0 +1,16 @@
+#!/bin/sh
+
+cd $1
+
+status=`git status --porcelain`
+local=`git rev-parse --verify master`
+remote=`git rev-parse --verify origin/master`
+
+if [ "$status" != "" ]; then
+    echo "uncommited";
+    echo;
+    exit 1;
+elif [ "$local" != "$remote" ]; then
+    echo "unpushed";
+    exit 2;
+fi
