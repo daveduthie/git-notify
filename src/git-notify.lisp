@@ -1,6 +1,7 @@
 (ql:quickload :cl-fad)
 (defpackage git-notify
-  (:use :cl :cl-fad))
+  (:use :cl :cl-fad)
+  (:export :check-and-report))
 (in-package :git-notify)
 
 ;; Courtesy of Rosetta Code
@@ -30,7 +31,7 @@
   (handler-case
       (progn
         (uiop:run-program
-         `("git-check" ,path)
+         `("git-check" ,(namestring path))
          :output *standard-output*)
         :all-good)
     (uiop/run-program:subprocess-error (c)
@@ -39,7 +40,28 @@
         ((2) :unpushed-changes)
         (otherwise :idk-lol)))))
 
-;; (check-repo "~/code/learn/scm-to-asm")
+(defun eat-prefix (root)
+  (let ((prefix (length (namestring (truename root)))))
+    (lambda (path)
+      (subseq (namestring path) prefix))))
 
-;; (check-repo "~/code/learn/common-lisp/git-notify")
+;; FIXME
+(defmacro report (key fmt eater name)
+  `((,key) (write-line (format nil ,fmt (funcall ,eater ,name)))))
+
+(defun check-and-report (root)
+  (let ((eater (eat-prefix root)))
+    (mapcar (lambda (dir)
+              (let ((name (namestring dir)))
+                (case (check-repo dir)
+                  ((:all-good) (write-line (format nil "~a ✔" (funcall eater name))))
+                  ;; (report :all-good "~a ✔" eater name)
+                  ((:uncommited-changes) (write-line (format nil "~a ✖" (funcall eater name))))
+                  ;; (report :uncommited-changes "~a ✖" eater name)
+                  ((:unpushed-changes) (write-line (format nil "~a ▨" (funcall eater name))))
+                  ;; (report :unpushed-changes "~a ▨" eater name)
+                  ((:idk-lol) (write-line (format nil "~a ?" (funcall eater name))))
+                  ;; (report :idk-lol "~a ?" eater name)
+                  )))
+            (find-git-dirs root))))
 

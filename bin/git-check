@@ -7,10 +7,9 @@ local=`git rev-parse --verify master`
 remote=`git rev-parse --verify origin/master`
 
 if [ "$status" != "" ]; then
-    echo "uncommited";
-    echo;
+    # echo "uncommited";
     exit 1;
 elif [ "$local" != "$remote" ]; then
-    echo "unpushed";
+    # echo "unpushed";
     exit 2;
 fi
