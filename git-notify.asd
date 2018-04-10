@@ -20,6 +20,6 @@
   :description "Walk a directory of git repositories and check if they are up to date."
   :long-description
   #.(uiop:read-file-string
-     (uiop:subpathname *load-pathname* "./README.markdown"))
+     (uiop:subpathname *load-pathname* "./README.md"))
   :in-order-to ((test-op (test-op "git-notify-test"))))
 
