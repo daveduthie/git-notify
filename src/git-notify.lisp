@@ -31,11 +31,10 @@
       (let ((status (git-run path "status" "--porcelain"))
             (master (git-run path "rev-list" "--max-count=5" "--branches"))
             (origin (git-run path "rev-list" "--max-count=5" "--remotes")))
-        (if (not (equal status ""))
-            :uncommited-changes
-            (if (not (equal master origin))
-                :unpushed-changes
-                :all-good)))
+        (cond
+          ((not (equal status "")) :uncommited-changes)
+          ((not (equal master origin)) :unpushed-changes)
+          (:otherwise :all-good)))
     (uiop/run-program:subprocess-error (c)
       (write-line (format nil "caught exit code ~d" c))
       :idk-lol)))
