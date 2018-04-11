@@ -3,36 +3,50 @@
   (:export :check-and-report))
 (in-package :git-notify)
 
-(defun find-git-dirs (directory)
-  (mapcan (lambda (entry)
-            (let ((git-repo? (uiop:directory-exists-p
-                              (uiop:merge-pathnames* #p".git/" entry))))
-              (if git-repo?
-                  (list entry)
-                  (when (uiop:directory-pathname-p entry)
-                    (find-git-dirs entry)))))
-          (uiop:subdirectories directory)))
+(defun git-repo? (dir)
+  (uiop:probe-file*
+   (concatenate 'string (namestring dir) ".git/")))
 
-(defun git-run (dir cmd &optional (args ";"))
-  (uiop:run-program
-   (list "git" "--work-tree" (namestring dir) cmd args)
-   :output :string))
+(defun find-git-dirs (directory)
+  (if (git-repo? directory)
+      (list directory)
+      (mapcan (lambda (entry)
+                (if (git-repo? entry)
+                    (list entry)
+                    (when (uiop:directory-pathname-p entry)
+                      (find-git-dirs entry))))
+              (uiop:subdirectories directory))))
+
+(defun git-run (dir cmd &rest args)
+  (let ((dirr (namestring (truename dir))))
+    (uiop:run-program
+     `("git"
+       "--git-dir" ,(concatenate 'string dirr ".git")
+       "--work-tree" ,dirr
+       ,cmd ,@args)
+     :output :string)))
 
 (defun check-repo (path)
-  (let ((status (git-run path "status" "--porcelain"))
-        (master (git-run path "rev-parse" "--verify master"))
-        (origin (git-run path "rev-parse" "--verify origin/master")))
-    (if (not (string= status ""))
-        :uncommited-changes
-        (if (not (string= master origin))
-            :unpushed-changes
-            :all-good))))
+  (handler-case
+      (let ((status (git-run path "status" "--porcelain"))
+            (master (git-run path "rev-list" "--max-count=5" "--branches"))
+            (origin (git-run path "rev-list" "--max-count=5" "--remotes")))
+        (if (not (equal status ""))
+            :uncommited-changes
+            (if (not (equal master origin))
+                :all-good)))
+    (uiop/run-program:subprocess-error (c)
+      (write-line (format nil "caught exit code ~d" c))
+      :idk-lol)))
 
 (defun eat-prefix (root)
   (let ((prefix (length (namestring (truename root)))))
     (lambda (path)
-      (subseq (namestring path) prefix))))
+      (if (equal path root)
+          "."
+          (subseq (namestring path) prefix)))))
 
+;; FIXME: :unpushed-changes unreachable
 (defmacro print-case (dir eater name &rest opts)
   (let ((opts (util:partition opts 2)))
     `(case (check-repo ,dir)
