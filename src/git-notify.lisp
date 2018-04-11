@@ -3,41 +3,30 @@
   (:export :check-and-report))
 (in-package :git-notify)
 
-;; Courtesy of Rosetta Code
-;;
-;; (ql:quickload :cl-fad)
-;; (defun mapc-directory-tree (fn directory &key (depth-first-p t))
-;;   (dolist (entry (cl-fad:list-directory directory))
-;;     (unless depth-first-p
-;;       (funcall fn entry))
-;;     (when (cl-fad:directory-pathname-p entry)
-;;       (mapc-directory-tree fn entry))
-;;     (when depth-first-p
-;;       (funcall fn entry))))
+(defun find-git-dirs (directory)
+  (mapcan (lambda (entry)
+            (let ((git-repo? (uiop:directory-exists-p
+                              (uiop:merge-pathnames* #p".git/" entry))))
+              (if git-repo?
+                  (list entry)
+                  (when (uiop:directory-pathname-p entry)
+                    (find-git-dirs entry)))))
+          (uiop:subdirectories directory)))
 
-(defun find-git-dirs (directory &optional (dirs '()))
-  (dolist (entry (uiop:subdirectories directory))
-    (let ((git-repo? (uiop:directory-exists-p
-                      (uiop:merge-pathnames* #p".git/" entry))))
-      (if git-repo?
-          (progn
-            (setf dirs (push entry dirs)))
-          (when (uiop:directory-pathname-p entry)
-            (setf dirs (find-git-dirs entry dirs))))))
-  dirs)
+(defun git-run (dir cmd &optional (args ";"))
+  (uiop:run-program
+   (list "git" "--work-tree" (namestring dir) cmd args)
+   :output :string))
 
 (defun check-repo (path)
-  (handler-case
-      (progn
-        (uiop:run-program
-         `("git-check" ,(namestring path))
-         :output *standard-output*)
-        :all-good)
-    (uiop/run-program:subprocess-error (c)
-      (case (uiop/run-program:subprocess-error-code c)
-        ((1) :uncommited-changes)
-        ((2) :unpushed-changes)
-        (otherwise :idk-lol)))))
+  (let ((status (git-run path "status" "--porcelain"))
+        (master (git-run path "rev-parse" "--verify master"))
+        (origin (git-run path "rev-parse" "--verify origin/master")))
+    (if (not (string= status ""))
+        :uncommited-changes
+        (if (not (string= master origin))
+            :unpushed-changes
+            :all-good))))
 
 (defun eat-prefix (root)
   (let ((prefix (length (namestring (truename root)))))
