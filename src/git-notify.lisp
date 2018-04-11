@@ -34,6 +34,7 @@
         (if (not (equal status ""))
             :uncommited-changes
             (if (not (equal master origin))
+                :unpushed-changes
                 :all-good)))
     (uiop/run-program:subprocess-error (c)
       (write-line (format nil "caught exit code ~d" c))
