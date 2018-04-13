@@ -14,11 +14,7 @@ exec ros -Q -m git-notify -- $0 "$@"
    :git-notify))
 (in-package :ros.script.git-notify.3732380400)
 
-(defun main
-    (&optional (root (namestring *default-pathname-defaults*))
-     &rest argv)
-  (declare (ignorable argv))
-  (write-line (format nil "root => ~a" root))
-  (git-notify:check-and-report root))
+(defun main (&rest argv)
+  (git-notify:-main argv))
 
 ;;; vim: set ft=lisp lisp:

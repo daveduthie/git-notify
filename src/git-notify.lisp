@@ -1,6 +1,7 @@
 (defpackage git-notify
-  (:use :cl :util)
-  (:export :check-and-report))
+  (:use :cl :util :unix-opts)
+  (:shadowing-import-from :unix-opts :describe)
+  (:export :-main))
 (in-package :git-notify)
 
 (defun git-repo? (dir)
@@ -28,11 +29,14 @@
 
 (defun check-repo (path)
   (handler-case
-      (let ((status (git-run path "status" "--porcelain"))
-            (master (git-run path "rev-list" "--max-count=5" "--branches"))
-            (origin (git-run path "rev-list" "--max-count=5" "--remotes")))
+      (let ((status
+              (git-run path "status" "--porcelain"))
+            (master
+              (git-run path "rev-list" "--max-count=5" "--branches"))
+            (origin
+              (git-run path "rev-list" "--max-count=5" "--remotes")))
         (cond
-          ((not (equal status "")) :uncommited-changes)
+          ((not (equal status "")) :uncommitted-changes)
           ((not (equal master origin)) :unpushed-changes)
           (:otherwise :all-good)))
     (uiop/run-program:subprocess-error (c)
@@ -46,7 +50,6 @@
           "."
           (subseq (namestring path) prefix)))))
 
-;; FIXME: :unpushed-changes unreachable
 (defmacro print-case (dir eater name &rest opts)
   (let ((opts (util:partition opts 2)))
     `(case (check-repo ,dir)
@@ -59,7 +62,43 @@
     (mapcar (lambda (dir)
               (let ((name (namestring dir)))
                 (print-case dir eater name
-                 :all-good "~a ✔"
-                 :uncommited-changes "~a ✖"
-                 :unpushed-changes "~a ▨")))
+                 :all-good "✔"
+                 :uncommitted-changes "✖"
+                 :unpushed-changes "▨")))
             (find-git-dirs root))))
+
+(opts:define-opts
+  (:name :help
+   :description "print this help text"
+   :short #\h
+   :long "help")
+  (:name :level
+   :description "show uncommitted (0), unpushed (1), or all (2) repos"
+   :short #\l
+   :long "level"
+   :arg-parser #'parse-integer)
+  (:name :root
+   :description "repository root"
+   :short #\r
+   :long "root"
+   :arg-parser #'namestring))
+
+(defun -main (argv)
+  (handler-case
+      (multiple-value-bind
+            (options free-args) (opts:get-opts argv)
+        (when (getf options :help)
+          (print (opts:describe))
+          (opts:exit))
+        (setf util:*verbosity* (getf options :level 1))
+        (check-and-report
+         (or (getf options :root (first free-args))
+             *default-pathname-defaults*)))
+    (#+sbcl sb-sys:interactive-interrupt
+     #+ccl  ccl:interrupt-signal-condition
+     #+clisp system::simple-interrupt-condition
+     #+ecl ext:interactive-interrupt
+     #+allegro excl:interrupt-signal
+     ()
+      (write-line "(∗ ･‿･)ﾉ゛")
+      (opts:exit))))

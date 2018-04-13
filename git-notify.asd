@@ -11,7 +11,7 @@
   :version "0.1.0"
   :author "David Duthie"
   :license "Eclipse"
-  :depends-on ()
+  :depends-on ("unix-opts")
   :components ((:module "src"
                 :serial T
                 :components
