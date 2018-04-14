@@ -20,12 +20,14 @@
 
 (defun git-run (dir cmd &rest args)
   (let ((dirr (namestring (truename dir))))
-    (uiop:run-program
-     `("git"
-       "--git-dir" ,(concatenate 'string dirr ".git")
-       "--work-tree" ,dirr
-       ,cmd ,@args)
-     :output :string)))
+    (string-trim
+     "\"\""
+     (uiop:run-program
+      `("git"
+        "--git-dir" ,(concatenate 'string dirr ".git")
+        "--work-tree" ,dirr
+        ,cmd ,@args)
+      :output '(:string :stripped T)))))
 
 (defun check-repo (path)
   (handler-case
