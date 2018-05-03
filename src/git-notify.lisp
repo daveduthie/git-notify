@@ -80,24 +80,22 @@
    :description "show uncommitted (0), unpushed (1), or all (2) repos"
    :short #\l
    :long "level"
-   :arg-parser #'parse-integer)
-  (:name :root
-   :description "repository root"
-   :short #\r
-   :long "root"
-   :arg-parser #'namestring))
+   :arg-parser #'parse-integer))
+
+(defvar explanation
+  (format nil "~%Usage: git-notify [some-dir] (defaults to current directory)"))
 
 (defun -main (argv)
   (handler-case
       (multiple-value-bind
             (options free-args) (opts:get-opts argv)
         (when (getf options :help)
+          (write-line explanation)
           (print (opts:describe))
           (opts:exit))
         (setf util:*verbosity* (getf options :level 1))
         (check-and-report
-         (or (getf options :root (first free-args))
-             *default-pathname-defaults*)))
+         (or (first free-args) *default-pathname-defaults*)))
     (#+sbcl sb-sys:interactive-interrupt
      #+ccl  ccl:interrupt-signal-condition
      #+clisp system::simple-interrupt-condition
