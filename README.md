@@ -26,7 +26,7 @@
 
 ## Installation
 
-You'll need Roswell. Clone the repo somewhere Quickload can find it (for me that means symlinking my common lisp dev directory into `~/.roswell/local-projects`. You'll then be able to do `ros build git-notify.ros` which will produce a binary you can put anywhere. (The binary doesn't run any faster unfortunately, it's just dependency-free.)
+You'll need Roswell. Clone the repo somewhere Quickload can find it (for me that means symlinking my common lisp dev directory into `~/.roswell/local-projects`. You'll then be able to do `ros build roswell/git-notify.ros` which will produce a binary you can put anywhere. (The binary doesn't run any faster unfortunately, it's just dependency-free.)
 
 Then add roswell's bin path to your path:
 

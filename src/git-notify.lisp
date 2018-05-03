@@ -14,7 +14,11 @@
       (mapcan (lambda (entry)
                 (if (git-repo? entry)
                     (list entry)
-                    (when (uiop:directory-pathname-p entry)
+                    (when (and (uiop:directory-pathname-p entry)
+                               (not (util:hidden-p entry)))
+                      ;; DEBUGGING
+                      ;; (print "Considering: ")
+                      ;; (write-line (namestring entry))
                       (find-git-dirs entry))))
               (uiop:subdirectories directory))))
 
@@ -102,3 +106,4 @@
      ()
       (write-line "(∗ ･‿･)ﾉ゛")
       (opts:exit))))
+

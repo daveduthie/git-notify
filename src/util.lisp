@@ -3,6 +3,7 @@
   (:export
    :report
    :partition
+   :hidden-p
    :*verbosity*))
 (in-package :util)
 
@@ -27,3 +28,7 @@
   (loop for cell on list by #'(lambda (list)
                                 (nthcdr cell-size list))
         collecting (subseq cell 0 cell-size)))
+
+(defun hidden-p (path)
+  (uiop:hidden-pathname-p
+   (first (last (pathname-directory path)))))
